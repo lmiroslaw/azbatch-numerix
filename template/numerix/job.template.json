@@ -1,0 +1,101 @@
+{
+    "templateMetadata":{
+        "description":"Job template for Numerix with file per task scheduling"
+    },
+    "parameters":{
+		"jobName":{
+             "type":"string",
+             "metadata":{
+                 "description":"The job name"
+             }
+         },
+        "outputExt":{
+            "type":"string",
+            "defaultValue":".out",
+            "metadata":{
+                "description":"The output files extension"
+            }
+        },
+        "inputFilegroup":{
+            "type":"string",
+			"defaultValue":"fgrp-input-nx",
+            "metadata":{
+                "description":"The file group where the input files are stored.",
+                "advancedType":"file-group"
+            }
+        },
+        "outputFilegroup":{
+            "type":"string",
+		 "defaultValue":"fgrp-output-nx",
+            "metadata":{
+                "description":"The file group where outputs will be stored",
+                "advancedType":"file-group"
+            }
+        }
+    },
+    "job":{
+        "type":"Microsoft.Batch/batchAccounts/jobs",
+        "properties":{
+            "id":"[parameters('jobName')]",
+            "displayName":"Custom job",
+            "onAllTasksComplete":"terminateJob",
+            "poolInfo": {
+                "poolId": "[parameters('poolId')]"
+            },
+            "taskFactory":{
+                "type":"taskPerFile",
+                "source":{
+                    "fileGroup": "[parameters('inputFilegroup')]"
+                },
+                "repeatTask":{
+                    "displayName":"Task for {fileName}",
+                    "commandLine":"echo 'PYTHON='$PYTHON && export NX_LICENSE_DIR=$AZ_BATCH_NODE_SHARED_DIR && $AZ_BATCH_NODE_SHARED_DIR/NumeriX_Python36_15_6_1/bin/nxlm --install $AZ_BATCH_NODE_SHARED_DIR/Numerix.license.nxcfg && pip3.6 install $AZ_BATCH_NODE_SHARED_DIR/NumeriX_Python36_15_6_1/dist/nxpy-15.6.1-cp36-cp36m-linux_x86_64.whl && echo 'PATH:'$PATH && export PYTHONPATH=$AZ_BATCH_NODE_SHARED_DIR/NumeriX_Python36_15_6_1:/usr/lib64/python3.6/site-packages/:$PYTHONPATH && echo 'PYTHONPATH:'$PYTHONPATH && python3.6 $AZ_BATCH_APP_PACKAGE_nxapp_1_3/nx_equity_pricer.py {fileName} {fileName}[parameters('outputExt')]",
+                    "resourceFiles": [
+                        {
+                            "blobSource": "{url}",
+                            "filePath": "{fileName}"
+                        }
+                    ],
+                    "outputFiles":[
+                        {
+                            "filePattern":"../stdout.txt",
+                            "destination":{
+                                "autoStorage":{
+                                    "fileGroup":"[parameters('outputFilegroup')]",
+                                    "path":"[parameters('jobName')]/logs/{fileName}.stdout.log"
+                                }
+                            },
+                            "uploadOptions":{
+                                "uploadCondition":"taskCompletion"
+                            }
+                        },
+                        {
+                            "filePattern":"../stderr.txt",
+                            "destination":{
+                                "autoStorage":{
+                                    "fileGroup":"[parameters('outputFilegroup')]",
+                                    "path":"[parameters('jobName')]/logs/{fileName}.stderr.log"
+                                }
+                            },
+                            "uploadOptions":{
+                                "uploadCondition":"taskCompletion"
+                            }
+                        },
+                        {
+                            "filePattern":"{fileName}[parameters('outputExt')]",
+                            "destination":{
+                                "autoStorage":{
+                                    "fileGroup":"[parameters('outputFilegroup')]",
+                                    "path":"[parameters('jobName')]/outputs/{fileName}[parameters('outputExt')]"
+                                }
+                            },
+                            "uploadOptions":{
+                                "uploadCondition":"taskSuccess"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
