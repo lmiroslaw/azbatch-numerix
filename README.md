@@ -4,7 +4,7 @@ Example how to use Azure Batch with Numerix.
 Based on [1].
 
 This example demonstrates how to use Numerix Python SDK with Azure Batch. The deployment is simplified with Azure BatchLabs.
-The job executes by looping over the files located in input directory.  
+The job executes by looping over the files located in input directory.  The tests were performed on F1 series with BaseOS with CentOS.
 
 # Prerequsitives
 1. Numerix license file
